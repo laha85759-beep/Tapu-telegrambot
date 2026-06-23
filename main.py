@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from datetime import datetime, timezone
 from html import escape
 from typing import Any
 from urllib.parse import urlencode
@@ -322,11 +323,26 @@ def fetch_latest_articles() -> list[dict[str, Any]]:
     return load_newsdata_articles(payload)
 
 
+def is_recent(article: dict[str, Any], max_age_hours: int = 2) -> bool:
+    pub_date = article.get("pubDate") or ""
+    if not pub_date:
+        return False
+    try:
+        dt_str = pub_date.replace("Z", "+00:00")
+        if "+" not in dt_str and dt_str.count("-") == 2:
+            dt_str += "+00:00"
+        pub = datetime.fromisoformat(dt_str)
+        delta = datetime.now(timezone.utc) - pub
+        return delta.total_seconds() < max_age_hours * 3600
+    except Exception:
+        return True
+
+
 async def send_articles(bot: Bot, chat_id: str, articles: list[dict[str, Any]], seen_keys: set[str]) -> int:
     sent_count = 0
     for article in articles:
         key = article_key(article)
-        if not key or key in seen_keys or not is_forex_relevant(article):
+        if not key or key in seen_keys or not is_forex_relevant(article) or not is_recent(article):
             continue
 
         await bot.send_message(
