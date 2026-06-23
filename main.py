@@ -8,10 +8,10 @@ from urllib.request import urlopen
 
 from telegram import Bot
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "PLACEHOLDER_TOKEN_REVOKED")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+BOT_TOKEN = "8710452375:AAG-pqR8amkjx772hAYiLC_0WymUcoruVqE"
+TELEGRAM_CHAT_ID = "6207722743"
 NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "").strip()
-NEWS_API_KEY = os.getenv("NEWS_API_KEY", "").strip()
+NEWS_API_KEY = "f1f7db9dc3354374a5f03aa7652fd49b"
 NEWSDATA_API_URL = "https://newsdata.io/api/1/latest"
 NEWSAPI_URL = "https://newsapi.org/v2/everything"
 NEWS_PROVIDER = os.getenv("NEWS_PROVIDER", "auto").strip().lower()
