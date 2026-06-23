@@ -1,96 +1,253 @@
+import asyncio
+import json
 import os
-import re
+from html import escape
 from typing import Any
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
-# --- SECURE CREDENTIALS ---
-# The bot reads the token securely from the hosting environment.
-# Set this locally via terminal: export BOT_TOKEN="your_token_here"
+from telegram import Bot
+
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PLACEHOLDER_TOKEN_REVOKED")
-
-# --- REGEX PARSING ENGINE ---
-# Matches common signal patterns: "BUY EURUSD @ 1.0850 SL: 1.0800 TP: 1.0950"
-SIGNAL_PATTERN = re.compile(
-    r'(?P<action>BUY|SELL)\s+'
-    r'(?P<asset>[A-Z0-9_/]+)\s+'
-    r'(?:@|AT|ENTRY:?)\s*(?P<entry>[\d\.]+)\s*'
-    r'.*?(?:SL|STOP\s*LOSS)[:=\s]+(?P<sl>[\d\.]+)'
-    r'.*?(?:TP|TAKE\s*PROFIT)[:=\s]+(?P<tp>[\d\.]+)',
-    re.IGNORECASE | re.DOTALL,
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "").strip()
+NEWSDATA_API_URL = "https://newsdata.io/api/1/latest"
+NEWS_QUERY = os.getenv(
+    "NEWS_QUERY",
+    "forex OR usd OR eur OR gbp OR jpy OR xauusd OR gold OR fed OR ecb",
 )
+FETCH_INTERVAL_SECONDS = int(os.getenv("FETCH_INTERVAL_SECONDS", "900"))
+MAX_ARTICLES_PER_CYCLE = int(os.getenv("MAX_ARTICLES_PER_CYCLE", "5"))
+
+FOREX_TERMS = {
+    "forex",
+    "currency",
+    "currencies",
+    "fx",
+    "usd",
+    "dollar",
+    "eur",
+    "euro",
+    "gbp",
+    "pound",
+    "jpy",
+    "yen",
+    "xau",
+    "gold",
+    "fed",
+    "ecb",
+    "boe",
+    "boj",
+    "rate hike",
+    "rate cut",
+    "inflation",
+    "cpi",
+    "nonfarm payrolls",
+}
+
+CURRENCY_HINTS = {
+    "USD": ("usd", "dollar", "fed", "treasury"),
+    "EUR": ("eur", "euro", "ecb"),
+    "GBP": ("gbp", "pound", "boe", "bank of england"),
+    "JPY": ("jpy", "yen", "boj", "bank of japan"),
+    "XAU": ("xau", "gold", "bullion"),
+}
+
+POSITIVE_KEYWORDS = {
+    "rises",
+    "rise",
+    "gains",
+    "gain",
+    "surges",
+    "surge",
+    "strengthens",
+    "strong",
+    "hawkish",
+    "beats",
+    "beat",
+    "higher",
+    "upside",
+}
+
+NEGATIVE_KEYWORDS = {
+    "falls",
+    "fall",
+    "drops",
+    "drop",
+    "slides",
+    "slide",
+    "weakens",
+    "weak",
+    "dovish",
+    "misses",
+    "miss",
+    "lower",
+    "downside",
+    "cut",
+}
 
 
-def extract_signal(raw_text: str) -> dict[str, str] | None:
-    match = SIGNAL_PATTERN.search(raw_text)
-    if not match:
-        return None
-    return {
-        key: value.upper() if key in {"action", "asset"} else value
-        for key, value in match.groupdict().items()
+def build_newsdata_url() -> str:
+    params = {
+        "apikey": NEWSDATA_API_KEY,
+        "q": NEWS_QUERY,
+        "language": "en",
+        "category": "business",
     }
+    return f"{NEWSDATA_API_URL}?{urlencode(params)}"
 
 
-def get_message_text(update: Any) -> str:
-    channel_post = getattr(update, "channel_post", None)
-    if channel_post and getattr(channel_post, "text", None):
-        return channel_post.text
-
-    message = getattr(update, "message", None)
-    if message and getattr(message, "text", None):
-        return message.text
-
-    return ""
+def article_key(article: dict[str, Any]) -> str:
+    return str(
+        article.get("article_id")
+        or article.get("link")
+        or article.get("title")
+        or article.get("pubDate")
+        or ""
+    )
 
 
-async def parse_channel_signal(update: Any, context: Any):
-    """
-    Triggers automatically when the bot receives a message in a
-    channel or group where it has appropriate reading permissions.
-    """
-    del context
-    raw_text = get_message_text(update)
-    if not raw_text:
-        return
-
-    print("\n--- [New Message Intercepted] ---")
-    print(f"Raw Text:\n{raw_text.strip()}\n")
-
-    data = extract_signal(raw_text)
-    if data:
-        print("[OK] Trade signal parsed successfully.")
-        print(f"Asset      : {data['asset']}")
-        print(f"Action     : {data['action']}")
-        print(f"Entry Price: {data['entry']}")
-        print(f"Stop Loss  : {data['sl']}")
-        print(f"Take Profit: {data['tp']}\n")
-
-        # Connect this data dictionary to a database or forwarding workflow here.
-    else:
-        print("[INFO] Standard update or non-signal message received. Skipping parser.")
+def normalize_text(article: dict[str, Any]) -> str:
+    parts = [
+        article.get("title") or "",
+        article.get("description") or "",
+        " ".join(article.get("keywords") or []),
+        article.get("source_name") or "",
+    ]
+    return " ".join(parts).lower()
 
 
-def build_application(bot_token: str):
-    try:
-        from telegram.ext import Application, MessageHandler, filters
-    except ImportError as exc:
-        raise RuntimeError(
-            "python-telegram-bot is not installed. Run `pip install -r requirements.txt` first."
-        ) from exc
+def is_forex_relevant(article: dict[str, Any]) -> bool:
+    text = normalize_text(article)
+    return any(term in text for term in FOREX_TERMS)
 
-    app = Application.builder().token(bot_token).build()
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), parse_channel_signal))
-    return app
+
+def infer_bias_signal(article: dict[str, Any]) -> str | None:
+    text = normalize_text(article)
+
+    subject = None
+    for symbol, hints in CURRENCY_HINTS.items():
+        if any(hint in text for hint in hints):
+            subject = symbol
+            break
+
+    if not subject:
+        return None
+
+    score = sum(1 for word in POSITIVE_KEYWORDS if word in text)
+    score -= sum(1 for word in NEGATIVE_KEYWORDS if word in text)
+
+    if score == 0:
+        return None
+
+    direction = "Bullish" if score > 0 else "Bearish"
+    return f"{direction} {subject}"
+
+
+def format_article_message(article: dict[str, Any]) -> str:
+    title = escape(article.get("title") or "Untitled update")
+    source = escape(article.get("source_name") or "Unknown source")
+    published = escape(article.get("pubDate") or "Unknown time")
+    summary = escape((article.get("description") or "No description available.")[:400])
+    link = article.get("link") or ""
+    bias = infer_bias_signal(article)
+
+    lines = [
+        "<b>Forex News Alert</b>",
+        f"<b>Headline:</b> {title}",
+        f"<b>Source:</b> {source}",
+        f"<b>Published:</b> {published}",
+        f"<b>Summary:</b> {summary}",
+    ]
+
+    if bias:
+        lines.append(f"<b>News Bias:</b> {escape(bias)}")
+
+    if link:
+        lines.append(link)
+
+    return "\n".join(lines)
+
+
+def load_articles_from_payload(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    if payload.get("status") not in {None, "success"}:
+        raise RuntimeError(f"Newsdata API returned status {payload.get('status')!r}")
+    results = payload.get("results") or []
+    if not isinstance(results, list):
+        raise RuntimeError("Newsdata API payload did not contain a list of results")
+    return [item for item in results if isinstance(item, dict)]
+
+
+def fetch_latest_articles() -> list[dict[str, Any]]:
+    url = build_newsdata_url()
+    with urlopen(url, timeout=30) as response:
+        payload = json.load(response)
+    return load_articles_from_payload(payload)
+
+
+async def send_articles(bot: Bot, chat_id: str, articles: list[dict[str, Any]], seen_keys: set[str]) -> int:
+    sent_count = 0
+    for article in articles:
+        key = article_key(article)
+        if not key or key in seen_keys or not is_forex_relevant(article):
+            continue
+
+        await bot.send_message(
+            chat_id=chat_id,
+            text=format_article_message(article),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+        seen_keys.add(key)
+        sent_count += 1
+
+        if sent_count >= MAX_ARTICLES_PER_CYCLE:
+            break
+
+    return sent_count
+
+
+async def run_worker_cycle(bot: Bot, chat_id: str, seen_keys: set[str]) -> int:
+    articles = fetch_latest_articles()
+    return await send_articles(bot, chat_id, articles, seen_keys)
+
+
+def validate_config() -> list[str]:
+    missing = []
+    if BOT_TOKEN == "PLACEHOLDER_TOKEN_REVOKED":
+        missing.append("BOT_TOKEN")
+    if not TELEGRAM_CHAT_ID:
+        missing.append("TELEGRAM_CHAT_ID")
+    if not NEWSDATA_API_KEY:
+        missing.append("NEWSDATA_API_KEY")
+    return missing
+
+
+async def worker_loop() -> None:
+    bot = Bot(BOT_TOKEN)
+    seen_keys: set[str] = set()
+
+    print("LiveForexSignalsAI worker started.")
+    print(f"Polling Newsdata every {FETCH_INTERVAL_SECONDS} seconds.")
+
+    while True:
+        try:
+            sent_count = await run_worker_cycle(bot, TELEGRAM_CHAT_ID, seen_keys)
+            print(f"Worker cycle complete. Sent {sent_count} article(s).")
+        except Exception as exc:
+            print(f"[ERROR] Worker cycle failed: {exc}")
+
+        await asyncio.sleep(FETCH_INTERVAL_SECONDS)
 
 
 def main() -> int:
     print("Launching LiveForexSignalsAI Bot Engine...")
-
-    if BOT_TOKEN == "PLACEHOLDER_TOKEN_REVOKED":
-        print("[ERROR] Please set your secure BOT_TOKEN environment variable.")
+    missing = validate_config()
+    if missing:
+        print(f"[ERROR] Missing required environment variables: {', '.join(missing)}")
         return 1
 
-    app = build_application(BOT_TOKEN)
-    print("Bot is live and listening on the cloud server...")
-    app.run_polling()
+    asyncio.run(worker_loop())
     return 0
 
 

@@ -4,3 +4,16 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: NEWSDATA_API_KEY
+        sync: false
+      - key: FETCH_INTERVAL_SECONDS
+        value: "900"
+      - key: MAX_ARTICLES_PER_CYCLE
+        value: "5"
+      - key: NEWS_QUERY
+        value: "forex OR usd OR eur OR gbp OR jpy OR xauusd OR gold OR fed OR ecb"
