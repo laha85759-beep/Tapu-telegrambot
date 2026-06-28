@@ -967,6 +967,7 @@ def fetch_current_prices() -> dict[str, float]:
         "XAG/USD": "SI=F",
         "WTI": "CL=F",
         "BRENT": "BZ=F",
+        "US10Y": "^TNX",
         "BTC/USD": "BTC-USD",
         "ETH/USD": "ETH-USD",
         "SOL/USD": "SOL-USD",
@@ -2644,6 +2645,12 @@ async def send_institutional_signals(bot: Bot, seen_keys: set[str]) -> int:
             await broadcast(bot, commodity_block)
             sent += 1
             print("[COMMODITY WATCH] Sent commodity prices")
+
+        us_block = massive_data.format_us_market_block()
+        if us_block:
+            await broadcast(bot, us_block)
+            sent += 1
+            print("[US MARKET DATA] Sent indices & yields")
     except Exception as e:
         print(f"[ERROR] Institutional signals: {e}")
 
@@ -2930,6 +2937,7 @@ async def session_summary_job(
             ("DXY",     "DXY Index     "),
             ("NIFTY",   "Nifty 50      "),
             ("WTI",     "Crude Oil WTI "),
+            ("US10Y",   "US 10Y Yield  "),
         ]
         price_lines = []
         for key, label in label_map:
@@ -3062,7 +3070,7 @@ async def ai_agent_improvement_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                         f"━━━━━━━━━━━━━━━━━━",
                     ]
                     for pair in ["XAU/USD", "EUR/USD", "GBP/USD", "BTC/USD", "ETH/USD",
-                                 "US100", "US30", "DXY", "NIFTY", "WTI"]:
+                                 "US100", "US30", "DXY", "NIFTY", "WTI", "US10Y"]:
                         p = prices.get(pair)
                         if p:
                             snapshot_lines.append(f"  {pair}: {_price_str(p, pair)}")

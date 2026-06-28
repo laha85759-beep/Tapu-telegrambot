@@ -22,6 +22,14 @@ COMMODITY_SYMBOLS = {
     "HG=F": "Copper",
 }
 
+US_MARKET_SYMBOLS = {
+    "^TNX": "US10Y (10-Year Treasury)",
+    "^DJI": "Dow Jones (US30)",
+    "^IXIC": "NASDAQ (US100)",
+    "^GSPC": "S&P 500",
+    "DX-Y.NYB": "DXY (US Dollar Index)",
+}
+
 _last_req = 0.0
 
 
@@ -164,4 +172,32 @@ def format_commodity_signal_block() -> str | None:
 
     lines.append("")
     lines.append("\U0001f516 #commodities #futures")
+    return "\n".join(lines)
+
+
+def format_us_market_block() -> str | None:
+    import yfinance as yf
+    lines = ["\U0001f1fa\U0001f1f8 *US MARKET DATA*", "\u2500" * 30]
+    has_data = False
+    for symbol, name in US_MARKET_SYMBOLS.items():
+        try:
+            tk = yf.Ticker(symbol)
+            hist = tk.history(period="3d")
+            if hist.empty or len(hist) < 2:
+                continue
+            close = float(hist["Close"].iloc[-1])
+            prev_close = float(hist["Close"].iloc[-2])
+            change = close - prev_close
+            pct = (change / prev_close) * 100
+            sign = "+" if change >= 0 else ""
+            emoji = "\U0001f7e2" if change >= 0 else "\U0001f534"
+            val = f"{close:.2f}" if "TNX" in symbol else f"{close:,.2f}"
+            lines.append(f"{emoji} *{name}*: ${val} ({sign}{pct:.2f}%)")
+            has_data = True
+        except Exception:
+            pass
+    if not has_data:
+        return None
+    lines.append("")
+    lines.append("\U0001f516 #US  #stocks #indices #economy")
     return "\n".join(lines)

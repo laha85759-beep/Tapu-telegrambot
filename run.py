@@ -86,7 +86,7 @@ async def run_ai_cycle(bot: Bot) -> None:
                 f"━━━━━━━━━━━━━━━━━━",
             ]
             for pair in ["XAU/USD", "EUR/USD", "GBP/USD", "BTC/USD", "ETH/USD",
-                         "US100", "US30", "DXY", "NIFTY", "WTI"]:
+                         "US100", "US30", "DXY", "NIFTY", "WTI", "US10Y"]:
                 p = prices.get(pair)
                 if p:
                     snapshot_lines.append(f"  {pair}: {_price_str(p, pair)}")
