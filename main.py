@@ -18,6 +18,7 @@ import realtime_alert
 import ai_agent
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+BOT_TOKEN2 = os.getenv("BOT_TOKEN2", "").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "").strip()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "").strip()
@@ -2455,6 +2456,19 @@ def format_intraday_message(article: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+_bot2_instance: Bot | None = None
+
+
+def _init_bot2() -> Bot | None:
+    global _bot2_instance
+    if _bot2_instance is not None:
+        return _bot2_instance
+    if BOT_TOKEN2:
+        _bot2_instance = Bot(BOT_TOKEN2)
+        print("[BOT2] Second bot initialized")
+    return _bot2_instance
+
+
 async def broadcast(bot: Bot, text: str, parse_mode: str = "Markdown", disable_web_page_preview: bool = True) -> int:
     global _subscribers
     sent = 0
@@ -2462,28 +2476,35 @@ async def broadcast(bot: Bot, text: str, parse_mode: str = "Markdown", disable_w
     if TELEGRAM_CHAT_ID:
         targets.insert(0, TELEGRAM_CHAT_ID)
 
+    bots = [bot]
+    bot2 = _init_bot2()
+    if bot2:
+        bots.append(bot2)
+
     seen_cids: set[int | str] = set()
-    for cid in targets:
-        if cid in seen_cids:
-            continue
-        seen_cids.add(cid)
-        try:
-            await bot.send_message(
-                chat_id=cid,
-                text=text,
-                parse_mode=parse_mode,
-                disable_web_page_preview=disable_web_page_preview,
-            )
-            sent += 1
-        except Exception as exc:
-            err_str = str(exc).lower()
-            if "blocked" in err_str or "forbidden" in err_str or "chat not found" in err_str:
-                if isinstance(cid, int) and cid in _subscribers:
-                    _subscribers.remove(cid)
-                    save_subscribers(_subscribers)
-                    print(f"[BROADCAST] Removed blocked/subscriber {cid}")
-            else:
-                print(f"[BROADCAST] Failed to send to {cid}: {exc}")
+    for b in bots:
+        for cid in targets:
+            if cid in seen_cids:
+                continue
+            seen_cids.add(cid)
+            try:
+                await b.send_message(
+                    chat_id=cid,
+                    text=text,
+                    parse_mode=parse_mode,
+                    disable_web_page_preview=disable_web_page_preview,
+                )
+                sent += 1
+            except Exception as exc:
+                err_str = str(exc).lower()
+                if "blocked" in err_str or "forbidden" in err_str or "chat not found" in err_str:
+                    if isinstance(cid, int) and cid in _subscribers:
+                        _subscribers.remove(cid)
+                        save_subscribers(_subscribers)
+                        print(f"[BROADCAST] Removed blocked/subscriber {cid}")
+                else:
+                    label = "bot2" if bot2 and b is bot2 else "bot1"
+                    print(f"[BROADCAST] Failed to send via {label} to {cid}: {exc}")
     return sent
 
 
