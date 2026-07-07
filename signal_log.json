@@ -1,7 +1,7 @@
 [
   {
     "date": "2026-07-07",
-    "time": "12:48 UTC",
+    "time": "13:18 UTC",
     "pair": "EUR/USD",
     "direction": "SELL",
     "entry": 1.08,
@@ -12,7 +12,7 @@
   },
   {
     "date": "2026-07-07",
-    "time": "12:48 UTC",
+    "time": "13:18 UTC",
     "pair": "NIFTY",
     "direction": "SELL",
     "entry": 19500.0,
@@ -23,7 +23,7 @@
   },
   {
     "date": "2026-07-07",
-    "time": "12:48 UTC",
+    "time": "13:18 UTC",
     "pair": "RELIANCE",
     "direction": "BUY",
     "entry": 2800.0,
@@ -31,5 +31,137 @@
     "tp2": 2856.0,
     "sl": 2786.0,
     "source": "intraday"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "SELL",
+    "entry": 1.1429,
+    "tp1": 1.1399,
+    "tp2": 1.1379,
+    "sl": 1.1449,
+    "source": "news"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "USD/JPY",
+    "direction": "BUY",
+    "entry": 162.13,
+    "tp1": 162.43,
+    "tp2": 162.63,
+    "sl": 161.93,
+    "source": "news"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "GBP/USD",
+    "direction": "SELL",
+    "entry": 1.3369,
+    "tp1": 1.3339,
+    "tp2": 1.3319,
+    "sl": 1.3389,
+    "source": "news"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "USD/CAD",
+    "direction": "BUY",
+    "entry": 1.42,
+    "tp1": 1.423,
+    "tp2": 1.425,
+    "sl": 1.418,
+    "source": "news"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "SELL",
+    "entry": 1.08,
+    "tp1": 1.077,
+    "tp2": 1.075,
+    "sl": 1.082,
+    "source": "forex"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "SELL",
+    "entry": 1.08,
+    "tp1": 1.077,
+    "tp2": 1.075,
+    "sl": 1.082,
+    "source": "forex"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "HDFCBANK",
+    "direction": "BUY",
+    "entry": 1800.0,
+    "tp1": 1818.0,
+    "tp2": 1836.0,
+    "sl": 1791.0,
+    "source": "india"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "TCS",
+    "direction": "BUY",
+    "entry": 4000.0,
+    "tp1": 4040.0,
+    "tp2": 4080.0,
+    "sl": 3980.0,
+    "source": "intraday"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "BUY",
+    "entry": 1.08,
+    "tp1": 1.083,
+    "tp2": 1.085,
+    "sl": 1.078,
+    "source": "forex"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "BUY",
+    "entry": 1.08,
+    "tp1": 1.08,
+    "tp2": 1.08,
+    "sl": 1.08,
+    "source": "india"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "BUY",
+    "entry": 1.08,
+    "tp1": 1.08,
+    "tp2": 1.08,
+    "sl": 1.08,
+    "source": "intraday"
+  },
+  {
+    "date": "2026-07-07",
+    "time": "13:19 UTC",
+    "pair": "EUR/USD",
+    "direction": "SELL",
+    "entry": 1.08,
+    "tp1": 1.077,
+    "tp2": 1.075,
+    "sl": 1.082,
+    "source": "forex"
   }
 ]

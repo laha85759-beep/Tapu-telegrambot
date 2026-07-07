@@ -334,20 +334,26 @@ class AsyncWorkerTests(unittest.IsolatedAsyncioTestCase):
 
 class MainTests(unittest.TestCase):
     def test_validate_config_lists_missing_variables_for_newsdata(self):
-        with patch.object(main, "BOT_TOKEN", ""), patch.object(main, "TELEGRAM_CHAT_ID", ""), patch.object(main, "NEWS_PROVIDER", "newsdata"), patch.object(main, "NEWSDATA_API_KEY", ""):
+        with patch.dict("os.environ", {}, clear=True), \
+             patch.object(main, "NEWS_PROVIDER", "newsdata"), \
+             patch.object(main, "NEWSDATA_API_KEY", ""):
             missing = main.validate_config()
 
         self.assertEqual(missing, ["BOT_TOKEN / BOT_TOKEN3", "TELEGRAM_CHAT_ID / TELEGRAM_CHAT_ID3", "NEWSDATA_API_KEY"])
 
     def test_validate_config_lists_missing_variables_for_newsapi(self):
-        with patch.object(main, "BOT_TOKEN", "token"), patch.object(main, "TELEGRAM_CHAT_ID", "@channel"), patch.object(main, "NEWS_PROVIDER", "newsapi"), patch.object(main, "NEWS_API_KEY", ""):
+        with patch.dict("os.environ", {"BOT_TOKEN": "token", "TELEGRAM_CHAT_ID": "@channel"}, clear=True), \
+             patch.object(main, "NEWS_PROVIDER", "newsapi"), \
+             patch.object(main, "NEWS_API_KEY", ""):
             missing = main.validate_config()
 
         self.assertEqual(missing, ["NEWS_API_KEY"])
 
     @patch.object(main, "worker_loop")
     def test_main_runs_worker_when_config_is_present(self, worker_loop_mock):
-        with patch.object(main, "BOT_TOKEN", "token"), patch.object(main, "TELEGRAM_CHAT_ID", "@channel"), patch.object(main, "NEWS_PROVIDER", "newsapi"), patch.object(main, "NEWS_API_KEY", "demo"):
+        with patch.dict("os.environ", {"BOT_TOKEN": "token", "TELEGRAM_CHAT_ID": "@channel"}, clear=True), \
+             patch.object(main, "NEWS_PROVIDER", "newsapi"), \
+             patch.object(main, "NEWS_API_KEY", "demo"):
             with patch("main.asyncio.run") as run_mock:
                 exit_code = main.main()
 
@@ -358,7 +364,7 @@ class MainTests(unittest.TestCase):
         coroutine_arg.close()
 
     def test_main_returns_error_when_config_missing(self):
-        with patch.object(main, "BOT_TOKEN", ""), patch.object(main, "TELEGRAM_CHAT_ID", ""), patch.object(main, "NEWS_PROVIDER", "newsapi"), patch.object(main, "NEWS_API_KEY", ""):
+        with patch.dict("os.environ", {}, clear=True), patch.object(main, "NEWS_PROVIDER", "newsapi"), patch.object(main, "NEWS_API_KEY", ""):
             self.assertEqual(main.main(), 1)
 
 
