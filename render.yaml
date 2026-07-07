@@ -5,11 +5,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     envVars:
-      - key: BOT_TOKEN
-        sync: false
       - key: BOT_TOKEN3
         sync: false
-      - key: TELEGRAM_CHAT_ID
+      - key: TELEGRAM_CHAT_ID3
         sync: false
       - key: NEWS_PROVIDER
         value: "auto"

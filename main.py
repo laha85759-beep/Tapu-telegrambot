@@ -2813,9 +2813,9 @@ async def run_worker_cycle(bot: Bot, seen_keys: set[str]) -> int:
 def validate_config() -> list[str]:
     missing = []
     if not BOT_TOKEN:
-        missing.append("BOT_TOKEN")
+        missing.append("BOT_TOKEN / BOT_TOKEN3")
     if not TELEGRAM_CHAT_ID:
-        missing.append("TELEGRAM_CHAT_ID")
+        missing.append("TELEGRAM_CHAT_ID / TELEGRAM_CHAT_ID3")
 
     provider = get_active_provider()
     if provider == "newsapi":
