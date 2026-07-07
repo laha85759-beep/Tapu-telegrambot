@@ -33,6 +33,8 @@ services:
         sync: false
       - key: TWELVEDATA_API_KEY
         sync: false
+      - key: FINNHUB_API_KEY
+        sync: false
       - key: CRYPTO_SCAN_INTERVAL
         value: "300"
       - key: CRYPTO_MAX_CANDIDATES
