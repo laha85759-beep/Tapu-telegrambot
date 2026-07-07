@@ -1,12 +1,12 @@
-name: Forex Signals
+name: High-Impact News Check
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
-  send-signals:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python run.py
+      - run: python check_high_impact.py
         env:
           NEWS_PROVIDER: newsapi
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
