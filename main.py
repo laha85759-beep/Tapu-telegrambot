@@ -2812,9 +2812,11 @@ async def run_worker_cycle(bot: Bot, seen_keys: set[str]) -> int:
 
 def validate_config() -> list[str]:
     missing = []
-    if not BOT_TOKEN:
+    bt = os.environ.get("BOT_TOKEN") or os.environ.get("BOT_TOKEN3") or ""
+    if not bt:
         missing.append("BOT_TOKEN / BOT_TOKEN3")
-    if not TELEGRAM_CHAT_ID:
+    ci = os.environ.get("TELEGRAM_CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID3") or ""
+    if not ci:
         missing.append("TELEGRAM_CHAT_ID / TELEGRAM_CHAT_ID3")
 
     provider = get_active_provider()

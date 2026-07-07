@@ -10,7 +10,6 @@ from telegram import Bot
 import ai_agent
 import main as _main
 from main import (
-    BOT_TOKEN,
     _price_str,
     broadcast,
     fetch_current_prices,
@@ -20,6 +19,9 @@ from main import (
     save_seen_keys,
     validate_config,
 )
+
+# Resolve bot token directly from env (bypass module-level import)
+BOT_TOKEN = (os.environ.get("BOT_TOKEN") or os.environ.get("BOT_TOKEN3") or "").strip()
 
 _AI_COUNTER_FILE = os.path.join(os.path.dirname(__file__), ".ai_cycle_counter")
 
