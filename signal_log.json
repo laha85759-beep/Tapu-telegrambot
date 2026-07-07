@@ -1,46 +1,35 @@
 [
   {
     "date": "2026-07-07",
-    "time": "12:05 UTC",
+    "time": "12:48 UTC",
     "pair": "EUR/USD",
     "direction": "SELL",
-    "entry": 1.1429,
-    "tp1": 1.1399,
-    "tp2": 1.1379,
-    "sl": 1.1449,
-    "source": "news"
+    "entry": 1.08,
+    "tp1": 1.077,
+    "tp2": 1.075,
+    "sl": 1.082,
+    "source": "forex"
   },
   {
     "date": "2026-07-07",
-    "time": "12:05 UTC",
-    "pair": "USD/JPY",
-    "direction": "BUY",
-    "entry": 162.13,
-    "tp1": 162.43,
-    "tp2": 162.63,
-    "sl": 161.93,
-    "source": "news"
-  },
-  {
-    "date": "2026-07-07",
-    "time": "12:05 UTC",
-    "pair": "GBP/USD",
+    "time": "12:48 UTC",
+    "pair": "NIFTY",
     "direction": "SELL",
-    "entry": 1.3369,
-    "tp1": 1.3339,
-    "tp2": 1.3319,
-    "sl": 1.3389,
-    "source": "news"
+    "entry": 19500.0,
+    "tp1": 19470.0,
+    "tp2": 19450.0,
+    "sl": 19520.0,
+    "source": "india"
   },
   {
     "date": "2026-07-07",
-    "time": "12:05 UTC",
-    "pair": "USD/CAD",
+    "time": "12:48 UTC",
+    "pair": "RELIANCE",
     "direction": "BUY",
-    "entry": 1.42,
-    "tp1": 1.423,
-    "tp2": 1.425,
-    "sl": 1.418,
-    "source": "news"
+    "entry": 2800.0,
+    "tp1": 2828.0,
+    "tp2": 2856.0,
+    "sl": 2786.0,
+    "source": "intraday"
   }
 ]
