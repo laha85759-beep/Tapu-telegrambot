@@ -5,6 +5,18 @@ from unittest.mock import AsyncMock, patch
 import main
 
 
+class BotConfigTests(unittest.TestCase):
+    def test_resolve_bot_settings_prefers_primary_bot_token(self):
+        env = {
+            "BOT_TOKEN": "main-bot-token",
+            "BOT_TOKEN3": "backup-bot-token",
+            "TELEGRAM_CHAT_ID": "@primary",
+            "TELEGRAM_CHAT_ID3": "@backup",
+        }
+
+        self.assertEqual(main.resolve_bot_settings(env), ("main-bot-token", "@primary"))
+
+
 class NewsHelpersTests(unittest.TestCase):
     def test_build_newsdata_url_uses_query_and_api_key(self):
         with patch.object(main, "NEWSDATA_API_KEY", "demo-key"):

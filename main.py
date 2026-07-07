@@ -17,12 +17,19 @@ import massive_data
 import realtime_alert
 import ai_agent
 import crypto_screener
+import stock_analysis
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-BOT_TOKEN2 = os.getenv("BOT_TOKEN2", "").strip()
-BOT_TOKEN3 = os.getenv("BOT_TOKEN3", "").strip()
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
-TELEGRAM_CHAT_ID3 = os.getenv("TELEGRAM_CHAT_ID3", "").strip()
+def resolve_bot_settings(env: dict[str, str] | None = None) -> tuple[str, str]:
+    values = os.environ if env is None else env
+    token = (values.get("BOT_TOKEN") or values.get("BOT_TOKEN3") or "").strip()
+    chat_id = (values.get("TELEGRAM_CHAT_ID") or values.get("TELEGRAM_CHAT_ID3") or "").strip()
+    return token, chat_id
+
+
+BOT_TOKEN, TELEGRAM_CHAT_ID = resolve_bot_settings()
+BOT_TOKEN2 = ""
+BOT_TOKEN3 = ""
+TELEGRAM_CHAT_ID3 = ""
 NEWSDATA_API_KEY = os.getenv("NEWSDATA_API_KEY", "").strip()
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "").strip()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
@@ -1545,13 +1552,83 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "<b>ForexSignalAI Trade Analyzer</b>\n\n"
         "You are now subscribed to trading signals and market updates.\n\n"
         "Send me any trading or market question and I'll analyze it with AI.\n\n"
-        "Examples:\n"
+        "<b>Commands:</b>\n"
+        "/stock TICKER — Full stock analysis (tech + fundamentals + sentiment)\n"
+        "/fundamentals TICKER — Quick fundamental metrics snapshot\n\n"
+        "<b>Examples:</b>\n"
         "- Is EUR/USD bullish today?\n"
         "- Should I buy gold now?\n"
+        "- What's the outlook for AAPL?\n"
         "- Technical analysis of Nifty\n"
         "- What is the market outlook for this week?",
         parse_mode="HTML",
     )
+
+
+async def stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /stock <TICKER> — comprehensive stock analysis."""
+    global _subscribers
+    chat_id = update.effective_chat.id
+    if chat_id not in _subscribers:
+        _subscribers.append(chat_id)
+        save_subscribers(_subscribers)
+
+    args = context.args
+    if not args:
+        await update.message.reply_text(
+            "Usage: /stock <TICKER>\n"
+            "Example: /stock AAPL\n\n"
+            "Get comprehensive analysis with technical data, fundamentals, "
+            "news sentiment, and trading recommendations.",
+            parse_mode="HTML",
+        )
+        return
+
+    ticker = args[0].upper().strip()
+    await update.message.chat.send_action(action="typing")
+
+    question = " ".join(args[1:]) if len(args) > 1 else ""
+    result = stock_analysis.comprehensive_analysis(ticker, question)
+
+    if result:
+        await update.message.reply_text(result, parse_mode="HTML")
+    else:
+        await update.message.reply_text(
+            f"Sorry, could not analyze <b>{ticker}</b>. "
+            f"Please check the ticker symbol and try again.",
+            parse_mode="HTML",
+        )
+
+
+async def fundamentals_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /fundamentals <TICKER> — quick fundamental metrics snapshot."""
+    global _subscribers
+    chat_id = update.effective_chat.id
+    if chat_id not in _subscribers:
+        _subscribers.append(chat_id)
+        save_subscribers(_subscribers)
+
+    args = context.args
+    if not args:
+        await update.message.reply_text(
+            "Usage: /fundamentals <TICKER>\n"
+            "Example: /fundamentals MSFT\n\n"
+            "Get P/E, EPS, dividend yield, market cap, and other key metrics.",
+            parse_mode="HTML",
+        )
+        return
+
+    ticker = args[0].upper().strip()
+    await update.message.chat.send_action(action="typing")
+
+    result = stock_analysis.quick_fundamentals(ticker)
+    if result:
+        await update.message.reply_text(result, parse_mode="HTML")
+    else:
+        await update.message.reply_text(
+            f"Sorry, could not fetch fundamentals for <b>{ticker}</b>.",
+            parse_mode="HTML",
+        )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1563,7 +1640,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         print(f"[SUBSCRIBE] Chat {chat_id} subscribed via /help")
     await update.message.reply_text(
         "Send any trading or market question. "
-        "I will analyze it using AI and provide trading insights."
+        "I will analyze it using AI and provide trading insights.\n\n"
+        "Commands:\n"
+        "/stock TICKER — Full stock analysis with AI recommendations\n"
+        "/fundamentals TICKER — Quick fundamental metrics\n"
+        "/subscribe — Get trading signals\n"
+        "/unsubscribe — Stop signals\n"
+        "/status — Check subscription"
     )
 
 
@@ -1626,6 +1709,19 @@ async def handle_user_question(update: Update, context: ContextTypes.DEFAULT_TYP
 
         await update.message.chat.send_action(action="typing")
 
+        # Detect if this is a stock-specific question
+        asset = detect_asset_in_text(question)
+        is_stock_question = asset and asset in stock_analysis.STOCK_SYMBOLS
+
+        if is_stock_question:
+            # Route to comprehensive stock analysis
+            result = stock_analysis.comprehensive_analysis(asset, question)
+            if result:
+                await update.message.reply_text(result, parse_mode="HTML")
+                return
+            # Fall through to generic analysis if stock analysis fails
+
+        # Generic AI answer
         answer = ai_answer_question(question)
 
         msg_parts: list[str] = []
@@ -1637,12 +1733,11 @@ async def handle_user_question(update: Update, context: ContextTypes.DEFAULT_TYP
         else:
             msg_parts.append(
                 "<b>AI analysis unavailable.</b>\n\n"
-                "GROQ_API_KEY may not be configured. Please check server settings."
+                "GROQ_API_KEY or OPENAI_API_KEY may not be configured. Please check server settings."
             )
             await update.message.reply_text("\n".join(msg_parts), parse_mode="HTML")
             return
 
-        asset = detect_asset_in_text(question)
         if asset and asset in TRADE_PAIRS:
             trade_setup = generate_asset_trade_setup(asset, question)
             if trade_setup:
@@ -2211,6 +2306,8 @@ def format_forex_message(article: dict[str, Any]) -> str:
                 theme = _get_today_theme()
                 sep = _style_sep(theme)
                 lines = [
+                    "📡 *TradeSignal Pro* | AI Signal",
+                    "",
                     _style_header(f"TradeSignal Pro — {dir_icon}", theme),
                     f"",
                     f"`Asset      ` *{pair}*   _{inst_name}_",
@@ -2218,7 +2315,7 @@ def format_forex_message(article: dict[str, Any]) -> str:
                     f"",
                     f"`{sep}`",
                     _style_label("Entry",      _price_str(e, pair)),
-                    _style_label("Stop Loss",  f"{_price_str(s, pair)}  ({-_price_str(abs(s-e), pair)})"),
+                    _style_label("Stop Loss",  f"{_price_str(s, pair)}  (-{_price_str(abs(s-e), pair)})"),
                     _style_label("TP 1",       f"{_price_str(t1, pair)}  (+{_price_str(abs(t1-e), pair)})"),
                     _style_label("TP 2",       f"{_price_str(t2, pair)}  (+{_price_str(abs(t2-e), pair)})"),
                     _style_label("Risk:Reward", f"1 : {rr_str}"),
@@ -2342,6 +2439,8 @@ def format_india_message(article: dict[str, Any]) -> str:
     theme = _get_today_theme()
     sep = _style_sep(theme)
     lines = [
+        f"🔥 *NSE / BSE Signal* | SIGNAL",
+        "",
         _style_header(f"NSE / BSE Signal — {dir_icon}", theme),
         f"`{sep}`",
         f"`Asset      ` *{asset}*  ·  {inst_name}",
@@ -2489,6 +2588,8 @@ def format_intraday_message(article: dict[str, Any]) -> str:
     theme = _get_today_theme()
     sep = _style_sep(theme)
     lines = [
+        f"🔥 *Intraday Signal* | SIGNAL",
+        "",
         _style_header(f"Intraday Signal — {exchange_tag}", theme),
         f"`{sep}`",
         f"`Asset      ` *{asset}*  ·  {inst_name}  |  {dir_icon}",
@@ -2559,30 +2660,6 @@ def format_intraday_message(article: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-_bot2_instance: Bot | None = None
-_bot3_instance: Bot | None = None
-
-
-def _init_bot2() -> Bot | None:
-    global _bot2_instance
-    if _bot2_instance is not None:
-        return _bot2_instance
-    if BOT_TOKEN2:
-        _bot2_instance = Bot(BOT_TOKEN2)
-        print("[BOT2] Second bot initialized")
-    return _bot2_instance
-
-
-def _init_bot3() -> Bot | None:
-    global _bot3_instance
-    if _bot3_instance is not None:
-        return _bot3_instance
-    if BOT_TOKEN3:
-        _bot3_instance = Bot(BOT_TOKEN3)
-        print("[BOT3] Third bot initialized")
-    return _bot3_instance
-
-
 async def broadcast(bot: Bot, text: str, parse_mode: str = "Markdown", disable_web_page_preview: bool = True) -> int:
     global _subscribers
     sent = 0
@@ -2590,41 +2667,28 @@ async def broadcast(bot: Bot, text: str, parse_mode: str = "Markdown", disable_w
     if TELEGRAM_CHAT_ID:
         targets.insert(0, TELEGRAM_CHAT_ID)
 
-    bots = [bot]
-    bot2 = _init_bot2()
-    if bot2:
-        bots.append(bot2)
-    bot3 = _init_bot3()
-    if bot3:
-        bots.append(bot3)
-
-    for b in bots:
-        bot_targets = targets
-        if bot3 and b is bot3 and TELEGRAM_CHAT_ID3:
-            bot_targets = [TELEGRAM_CHAT_ID3]
-        seen_cids: set[int | str] = set()
-        for cid in bot_targets:
-            if cid in seen_cids:
-                continue
-            seen_cids.add(cid)
-            try:
-                await b.send_message(
-                    chat_id=cid,
-                    text=text,
-                    parse_mode=parse_mode,
-                    disable_web_page_preview=disable_web_page_preview,
-                )
-                sent += 1
-            except Exception as exc:
-                err_str = str(exc).lower()
-                if "blocked" in err_str or "forbidden" in err_str or "chat not found" in err_str:
-                    if isinstance(cid, int) and cid in _subscribers:
-                        _subscribers.remove(cid)
-                        save_subscribers(_subscribers)
-                        print(f"[BROADCAST] Removed blocked/subscriber {cid}")
-                else:
-                    label = "bot3" if bot3 and b is bot3 else "bot2" if bot2 and b is bot2 else "bot1"
-                    print(f"[BROADCAST] Failed to send via {label} to {cid}: {exc}")
+    seen_cids: set[int | str] = set()
+    for cid in targets:
+        if cid in seen_cids:
+            continue
+        seen_cids.add(cid)
+        try:
+            await bot.send_message(
+                chat_id=cid,
+                text=text,
+                parse_mode=parse_mode,
+                disable_web_page_preview=disable_web_page_preview,
+            )
+            sent += 1
+        except Exception as exc:
+            err_str = str(exc).lower()
+            if "blocked" in err_str or "forbidden" in err_str or "chat not found" in err_str:
+                if isinstance(cid, int) and cid in _subscribers:
+                    _subscribers.remove(cid)
+                    save_subscribers(_subscribers)
+                    print(f"[BROADCAST] Removed blocked/subscriber {cid}")
+            else:
+                print(f"[BROADCAST] Failed to send via primary bot to {cid}: {exc}")
     return sent
 
 
@@ -3181,21 +3245,11 @@ async def worker_loop() -> None:
     app.add_handler(CommandHandler("subscribe", subscribe_command))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe_command))
     app.add_handler(CommandHandler("status", status_command))
+    app.add_handler(CommandHandler("stock",  stock_command))
+    app.add_handler(CommandHandler("fundamentals", fundamentals_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_question))
 
     jq = app.job_queue
-
-    # ── Second bot polling (BOT_TOKEN3) ─────────────────────────────────────
-    app3: Application | None = None
-    if BOT_TOKEN3:
-        app3 = Application.builder().token(BOT_TOKEN3).build()
-        app3.add_handler(CommandHandler("start",  start_command))
-        app3.add_handler(CommandHandler("help",   help_command))
-        app3.add_handler(CommandHandler("subscribe", subscribe_command))
-        app3.add_handler(CommandHandler("unsubscribe", unsubscribe_command))
-        app3.add_handler(CommandHandler("status", status_command))
-        app3.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_question))
-        print("[BOT3] Third bot polling enabled")
 
     # ── Start Finnhub WebSocket listener in background ────────────────────────
     try:
@@ -3237,13 +3291,7 @@ async def worker_loop() -> None:
 
     print("All jobs scheduled. Listening for user questions...")
 
-    if app3:
-        await asyncio.gather(
-            app.run_polling(allowed_updates=Update.ALL_TYPES),
-            app3.run_polling(allowed_updates=Update.ALL_TYPES),
-        )
-    else:
-        await app.run_polling(allowed_updates=Update.ALL_TYPES)
+    await app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 def main() -> int:

@@ -29,6 +29,10 @@ services:
         value: '(reliance OR tcs OR hdfc OR infosys OR icici OR "hindustan unilever" OR sbi OR bharti OR "stock market today") AND (india OR "bse" OR "nse")'
       - key: MASSIVE_API_KEY
         sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: TWELVEDATA_API_KEY
+        sync: false
       - key: CRYPTO_SCAN_INTERVAL
         value: "300"
       - key: CRYPTO_MAX_CANDIDATES
