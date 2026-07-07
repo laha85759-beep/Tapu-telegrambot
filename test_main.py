@@ -337,7 +337,7 @@ class MainTests(unittest.TestCase):
         with patch.object(main, "BOT_TOKEN", ""), patch.object(main, "TELEGRAM_CHAT_ID", ""), patch.object(main, "NEWS_PROVIDER", "newsdata"), patch.object(main, "NEWSDATA_API_KEY", ""):
             missing = main.validate_config()
 
-        self.assertEqual(missing, ["BOT_TOKEN", "TELEGRAM_CHAT_ID", "NEWSDATA_API_KEY"])
+        self.assertEqual(missing, ["BOT_TOKEN / BOT_TOKEN3", "TELEGRAM_CHAT_ID / TELEGRAM_CHAT_ID3", "NEWSDATA_API_KEY"])
 
     def test_validate_config_lists_missing_variables_for_newsapi(self):
         with patch.object(main, "BOT_TOKEN", "token"), patch.object(main, "TELEGRAM_CHAT_ID", "@channel"), patch.object(main, "NEWS_PROVIDER", "newsapi"), patch.object(main, "NEWS_API_KEY", ""):
