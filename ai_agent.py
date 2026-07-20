@@ -376,5 +376,227 @@ def format_btc_market_update(ai_output: str, btc_price: float | None = None) -> 
     return "\n".join(parts)
 
 
+# ── Dedicated Signal Generators for XAUUSD, Bitcoin, Nasdaq, US Pairs ──────
+
+def generate_xauusd_signal(current_price: float | None = None, news_context: str = "") -> str | None:
+    """Generate XAU/USD (Gold) trade signal with entry, TP, and SL using AI + live data."""
+    price_ctx = ""
+    if current_price:
+        price_ctx = f"Current XAU/USD price: ${current_price:,.2f}"
+    news_ctx = ""
+    if news_context:
+        news_ctx = f"\nRecent news: {news_context[:300]}"
+
+    prompt = (
+        "You are a professional gold (XAU/USD) trading analyst. Generate a precise trade signal.\n\n"
+        f"{price_ctx}{news_ctx}\n\n"
+        "Based on current gold market conditions and news, provide:\n"
+        "1. Direction (LONG or SHORT)\n"
+        "2. Entry price (within 1-2$ of current price)\n"
+        "3. TP1 (first take profit, within 10-15$ range)\n"
+        "4. TP2 (second take profit, within 20-30$ range)\n"
+        "5. SL (stop loss, within 5-8$ range)\n"
+        "6. Key reason (1 sentence)\n\n"
+        "Format EXACTLY:\n"
+        "DIRECTION: LONG/SHORT\n"
+        "ENTRY: $XXXX.X\n"
+        "TP1: $XXXX.X\n"
+        "TP2: $XXXX.X\n"
+        "SL: $XXXX.X\n"
+        "REASON: <1 sentence>\n\n"
+        "Be precise with price levels. Consider current gold volatility."
+    )
+    result = _best_ai(prompt, "You are a professional XAU/USD trading analyst. Be precise and data-driven.")
+    if not result:
+        return None
+    return result.strip()
+
+
+def generate_nasdaq_signal(current_price: float | None = None, news_context: str = "") -> str | None:
+    """Generate NASDAQ (US100) trade signal with entry, TP, and SL using AI + live data."""
+    price_ctx = ""
+    if current_price:
+        price_ctx = f"Current NASDAQ (US100) price: ${current_price:,.2f}"
+    news_ctx = ""
+    if news_context:
+        news_ctx = f"\nRecent news: {news_context[:300]}"
+
+    prompt = (
+        "You are a professional US stock index trading analyst. Generate a NASDAQ (US100) trade signal.\n\n"
+        f"{price_ctx}{news_ctx}\n\n"
+        "Based on current market conditions and news, provide:\n"
+        "1. Direction (LONG or SHORT)\n"
+        "2. Entry price (within 10-20 points of current price)\n"
+        "3. TP1 (within 50-100 points range)\n"
+        "4. TP2 (within 100-200 points range)\n"
+        "5. SL (within 25-50 points range)\n"
+        "6. Key reason (1 sentence)\n\n"
+        "Format EXACTLY:\n"
+        "DIRECTION: LONG/SHORT\n"
+        "ENTRY: $XXXXX.X\n"
+        "TP1: $XXXXX.X\n"
+        "TP2: $XXXXX.X\n"
+        "SL: $XXXXX.X\n"
+        "REASON: <1 sentence>\n\n"
+        "Be precise. NASDAQ moves fast so give reasonable ranges."
+    )
+    result = _best_ai(prompt, "You are a professional NASDAQ trading analyst. Be precise and data-driven.")
+    if not result:
+        return None
+    return result.strip()
+
+
+def generate_forex_pair_signal(pair: str, current_price: float | None = None, news_context: str = "") -> str | None:
+    """Generate a major forex pair (EUR/USD, GBP/USD, USD/JPY) trade signal with entry, TP, and SL."""
+    price_ctx = ""
+    if current_price:
+        price_ctx = f"Current {pair} price: {current_price:.5f}"
+    news_ctx = ""
+    if news_context:
+        news_ctx = f"\nRecent news: {news_context[:300]}"
+
+    prompt = (
+        f"You are a professional forex trading analyst. Generate a {pair} trade signal.\n\n"
+        f"{price_ctx}{news_ctx}\n\n"
+        "Based on current forex market conditions and news, provide:\n"
+        "1. Direction (LONG or SHORT)\n"
+        "2. Entry price (within 5-10 pips of current price)\n"
+        "3. TP1 (within 15-25 pips range)\n"
+        "4. TP2 (within 30-50 pips range)\n"
+        "5. SL (within 10-15 pips range)\n"
+        "6. Key reason (1 sentence)\n\n"
+        "Format EXACTLY:\n"
+        "DIRECTION: LONG/SHORT\n"
+        "ENTRY: X.XXXXX\n"
+        "TP1: X.XXXXX\n"
+        "TP2: X.XXXXX\n"
+        "SL: X.XXXXX\n"
+        "REASON: <1 sentence>\n\n"
+        "Be precise with pip levels."
+    )
+    result = _best_ai(prompt, f"You are a professional {pair} forex trading analyst. Be precise and data-driven.")
+    if not result:
+        return None
+    return result.strip()
+
+
+def generate_us30_signal(current_price: float | None = None, news_context: str = "") -> str | None:
+    """Generate US30 (Dow Jones) trade signal with entry, TP, and SL."""
+    price_ctx = ""
+    if current_price:
+        price_ctx = f"Current US30 (Dow Jones) price: ${current_price:,.2f}"
+    news_ctx = ""
+    if news_context:
+        news_ctx = f"\nRecent news: {news_context[:300]}"
+
+    prompt = (
+        "You are a professional Dow Jones (US30) trading analyst. Generate a trade signal.\n\n"
+        f"{price_ctx}{news_ctx}\n\n"
+        "Based on current market conditions and news, provide:\n"
+        "1. Direction (LONG or SHORT)\n"
+        "2. Entry price (within 20-30 points of current)\n"
+        "3. TP1 (within 100-150 points range)\n"
+        "4. TP2 (within 200-300 points range)\n"
+        "5. SL (within 50-80 points range)\n"
+        "6. Key reason (1 sentence)\n\n"
+        "Format EXACTLY:\n"
+        "DIRECTION: LONG/SHORT\n"
+        "ENTRY: $XXXXX.X\n"
+        "TP1: $XXXXX.X\n"
+        "TP2: $XXXXX.X\n"
+        "SL: $XXXXX.X\n"
+        "REASON: <1 sentence>"
+    )
+    result = _best_ai(prompt, "You are a professional Dow Jones trading analyst. Be precise and data-driven.")
+    if not result:
+        return None
+    return result.strip()
+
+
+def format_ai_signal_block(
+    signal_type: str,
+    icon: str,
+    pair_label: str,
+    ai_output: str,
+    current_price: float | None = None,
+) -> str:
+    """Format any AI-generated signal into a consistent Telegram message block."""
+    if not ai_output:
+        return ""
+
+    lines = ai_output.strip().split("\n")
+    direction = ""
+    entry = ""
+    tp1 = ""
+    tp2 = ""
+    sl = ""
+    reason = ""
+
+    for line in lines:
+        line = line.strip()
+        if line.upper().startswith("DIRECTION:"):
+            direction = line.split(":", 1)[-1].strip()
+        elif line.upper().startswith("ENTRY:"):
+            entry = line.split(":", 1)[-1].strip()
+        elif line.upper().startswith("TP1:"):
+            tp1 = line.split(":", 1)[-1].strip()
+        elif line.upper().startswith("TP2:"):
+            tp2 = line.split(":", 1)[-1].strip()
+        elif line.upper().startswith("SL:"):
+            sl = line.split(":", 1)[-1].strip()
+        elif line.upper().startswith("REASON:"):
+            reason = line.split(":", 1)[-1].strip()
+
+    dir_icon = "🟢 LONG" if direction.upper() == "LONG" else "🔴 SHORT"
+    price_line = ""
+    if current_price:
+        price_line = f"💰 *Live Price:* ${current_price:,.2f}\n" if current_price >= 1000 else f"💰 *Live Price:* ${current_price:.2f}\n"
+
+    lines_out = [
+        f"{icon} *{signal_type}* | AI-Powered Signal",
+        "━━━━━━━━━━━━━━━━━━",
+        f"*{pair_label}*  ·  {dir_icon}  ·  H1",
+        f"_{ai_agent.__name__} Real-Time Analysis_",
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+    ]
+    if price_line.strip():
+        lines_out.append(price_line.strip())
+    if entry:
+        lines_out.append(f"📌 *Entry:*      {entry}")
+    if sl:
+        lines_out.append(f"🛑 *Stop Loss:*  {sl}")
+    if tp1:
+        lines_out.append(f"🎯 *TP 1:*       {tp1}")
+    if tp2:
+        lines_out.append(f"🎯 *TP 2:*       {tp2}")
+    if reason:
+        lines_out.extend([
+            "━━━━━━━━━━━━━━━━━━",
+            f"📊 *Analysis:* {reason}",
+        ])
+
+    lines_out.extend([
+        "",
+        "━━━━━━━━━━━━━━━━━━",
+        "🧠 *AI Learning Assistant*",
+        "",
+        f"📘 *Beginner:* {dir_icon} means we expect the price to {'rise' if direction.upper() == 'LONG' else 'fall'}. "
+        f"Entry at {entry} opens the trade. SL at {sl} caps losses. TP1/TP2 lock in profits.",
+        "",
+        f"📙 *Intermediate:* Entry {entry} with {'bullish' if direction.upper() == 'LONG' else 'bearish'} bias. "
+        f"Risk defined by SL at {sl}. First target TP1 at {tp1}, second target TP2 at {tp2}.",
+        "",
+        f"📈 *Experienced:* Key level at {entry}. "
+        f"{'Resistance' if direction.upper() == 'SHORT' else 'Support'} near targets. "
+        "Monitor volume and price action for confirmation.",
+        "",
+        f"🔖 #{signal_type.replace(' ', '').replace('/', '')}  #forex  #signal  #{'long' if direction.upper() == 'LONG' else 'short'}",
+        "⚠️ _Not financial advice. Trade at your own risk._",
+    ])
+
+    return "\n".join(lines_out)
+
+
 if __name__ == "__main__":
     print("AI Agent module loaded. Used by main.py for message enhancement.")

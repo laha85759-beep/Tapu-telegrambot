@@ -3273,6 +3273,50 @@ async def worker_loop() -> None:
     # ── Real-time monitoring polling checks ───────────────────────────────────
     jq.run_repeating(_realtime_polling_job,   interval=300, first=30)  # every 5 minutes
 
+    # ── Dedicated major pair signals (XAUUSD, BTC, Nasdaq, US30, EUR/USD, GBP/USD) ──
+    # Run every 4 hours to ensure consistent coverage of major pairs
+    async def _dedicated_signals_job(ctx: ContextTypes.DEFAULT_TYPE) -> None:
+        try:
+            import run as _run
+            # Inline the dedicated signal sending to avoid module issues
+            from telegram import Bot
+            prices = fetch_current_prices()
+            sent = 0
+
+            for pair_info in [
+                ("XAU/USD GOLD", "🥇", "XAU/USD · Gold vs USD", "XAU/USD"),
+                ("BTC/USD BITCOIN", "₿", "BTC/USD · Bitcoin vs USD", "BTC/USD"),
+                ("US100 NASDAQ", "📈", "US100 · NASDAQ Index", "US100"),
+                ("US30 DOW JONES", "📊", "US30 · Dow Jones Index", "US30"),
+                ("EUR/USD", "💶", "EUR/USD · Euro vs US Dollar", "EUR/USD"),
+                ("GBP/USD", "💷", "GBP/USD · British Pound vs US Dollar", "GBP/USD"),
+            ]:
+                signal_type, icon, pair_label, pair_key = pair_info
+                current_price = prices.get(pair_key)
+                if signal_type == "XAU/USD GOLD":
+                    ai_fn = ai_agent.generate_xauusd_signal
+                elif signal_type == "BTC/USD BITCOIN":
+                    ai_fn = ai_agent.generate_btc_trade_suggestion
+                elif signal_type == "US100 NASDAQ":
+                    ai_fn = ai_agent.generate_nasdaq_signal
+                elif signal_type == "US30 DOW JONES":
+                    ai_fn = ai_agent.generate_us30_signal
+                else:
+                    ai_fn = lambda cp=None, nc="": ai_agent.generate_forex_pair_signal(pair_key, cp, nc)
+
+                ai_output = ai_fn(current_price=current_price)
+                if ai_output:
+                    block = ai_agent.format_ai_signal_block(signal_type, icon, pair_label, ai_output, current_price)
+                    if block:
+                        await broadcast(ctx.bot, block)
+                        sent += 1
+            if sent:
+                print(f"[DEDICATED SIGNALS] Sent {sent} major pair signal(s).")
+        except Exception as e:
+            print(f"[DEDICATED SIGNALS] Job failed: {e}")
+
+    jq.run_repeating(_dedicated_signals_job, interval=14400, first=120)  # every 4 hours
+
     # ── Morning briefing: 8:00 AM IST = 02:30 UTC ────────────────────────────
     jq.run_daily(morning_briefing_job,  time=time(hour=2,  minute=30), name="morning_briefing")
 

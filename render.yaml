@@ -1,11 +1,15 @@
 services:
   - type: worker
-    name: live-forex-signals-ai
+    name: tapu-telegram-bot
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     envVars:
+      - key: BOT_TOKEN
+        sync: false
       - key: BOT_TOKEN3
+        sync: false
+      - key: TELEGRAM_CHAT_ID
         sync: false
       - key: TELEGRAM_CHAT_ID3
         sync: false
@@ -15,24 +19,18 @@ services:
         sync: false
       - key: NEWS_API_KEY
         sync: false
-      - key: FETCH_INTERVAL_SECONDS
-        value: "900"
-      - key: FOREX_QUERY
-        value: 'forex OR "foreign exchange" OR (dollar AND fed) OR (euro AND ecb) OR (pound AND boe) OR (yen AND boj) OR (gold AND fed)'
-      - key: INDIA_MARKET_QUERY
-        value: '(sensex OR nifty OR "indian market" OR "india stock" OR "bse" OR "nse" OR "rbi" OR "rupee") AND (india OR mumbai)'
       - key: GROQ_API_KEY
-        sync: false
-      - key: INTRADAY_STOCK_QUERY
-        value: '(reliance OR tcs OR hdfc OR infosys OR icici OR "hindustan unilever" OR sbi OR bharti OR "stock market today") AND (india OR "bse" OR "nse")'
-      - key: MASSIVE_API_KEY
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: TWELVEDATA_API_KEY
-        sync: false
       - key: FINNHUB_API_KEY
         sync: false
+      - key: MASSIVE_API_KEY
+        sync: false
+      - key: FETCH_INTERVAL_SECONDS
+        value: "900"
+      - key: HIGH_IMPACT_CHECK_INTERVAL
+        value: "60"
       - key: CRYPTO_SCAN_INTERVAL
         value: "300"
       - key: CRYPTO_MAX_CANDIDATES

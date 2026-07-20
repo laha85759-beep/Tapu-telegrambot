@@ -3,3 +3,8 @@ __pycache__/
 .env
 .venv/
 sent_articles.json
+signal_log.json
+subscribers.json
+.ai_cycle_counter
+.dedicated_signals_sent
+crypto_screener_seen.json
