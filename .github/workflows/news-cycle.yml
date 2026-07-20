@@ -1,4 +1,4 @@
-name: News Cycle (every 15 min)
+name: News Cycle + AI Signals (24/7)
 
 on:
   schedule:
@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run news cycle
+      - name: Run full cycle with AI-powered dedicated signals for XAUUSD, BTC, NASDAQ, US30, EUR/USD, GBP/USD
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           BOT_TOKEN2: ${{ secrets.BOT_TOKEN2 }}
